@@ -1,7 +1,7 @@
-# SAR-Segment-Flask: Plataforma Web para Visualización y Segmentación de Imágenes SAR
+# Plataforma web para visualización y segmentación de imágenes SAR
 
 ## 📋 Descripción
-SAR-Segment-Flask es una aplicación web desarrollada con Flask que permite la visualización y análisis de imágenes satelitales, con énfasis en la detección y segmentación de inundaciones utilizando imágenes SAR de Sentinel-1. La plataforma también soporta la visualización de imágenes ópticas de Sentinel-2 y la integración de archivos vectoriales (SHP).
+sar-segmentation-app es una aplicación web desarrollada con Flask que permite la visualización y análisis de imágenes satelitales, con énfasis en la detección y segmentación de inundaciones utilizando imágenes SAR de Sentinel-1. La plataforma también soporta la visualización de imágenes ópticas de Sentinel-2 y la integración de archivos vectoriales (SHP).
 
 ## 🚀 Características Principales
 - Carga y visualización de imágenes satelitales:
