@@ -1,60 +1,196 @@
+/* Estilos generales */
 body {
     margin: 0;
+    padding: 0;
+    height: 100vh;
     overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Contenedor del mapa */
+#map-container {
+    position: relative;
+    width: 100%;
     height: 100vh;
     display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
+/* Estilos del sidebar */
 #sidebar {
-    background: rgba(255, 255, 255, 0.8);
-    padding: 15px;
-    border-left: 1px solid #ddd;
-    position: fixed;
-    right: 0;
-    top: 0;
-    height: 100%;
-    z-index: 1000;
-    transition: transform 0.3s ease;
-    width: 300px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-}
-
-#sidebar.collapsed {
-    transform: translateX(100%);
-}
-
-#map-container {
-    height: 100vh;
-    width: 100vw;
-    position: relative;
-    top: 0;
-    left: 0;
-    z-index: 0;
-}
-
-#toggle-sidebar {
-    margin-bottom: 10px;
     position: absolute;
-    top: 15px;
-    left: -45px;
-    border-radius: 50%;
+    right: 0;  /* Cambiado de left a right */
+    top: 0;
+    width: 300px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);  /* Sombra ajustada al lado izquierdo */
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+/* Sidebar colapsado */
+#sidebar.collapsed {
+    transform: translateX(280px);  /* Cambiado para deslizar hacia la derecha */
+}
+
+/* Botón de toggle del sidebar */
+#toggle-sidebar {
+    position: absolute;
+    left: -40px;  /* Cambiado de right a left */
+    top: 10px;
     width: 40px;
     height: 40px;
-    z-index: 1100;
-    background: #007bff;
-    color: white;
-    border: none;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-}
-
-button.btn {
+    border-radius: 4px 0 0 4px;  /* Ajustado para el lado izquierdo */
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);  /* Sombra ajustada */
+    z-index: 1001;
 }
 
-.hide {
-    display: none !important;
+/* Estilos para los formularios */
+.form-label {
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-control {
+    margin-bottom: 15px;
+}
+
+/* Botones personalizados */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.btn i {
+    font-size: 1.1em;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Estilos para el mapa de Folium */
+.folium-map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* Alerta personalizada */
+.alert {
+    max-width: 90%;
+    width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alert-danger {
+    background-color: #fff;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+
+.alert .close {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 0;
+    color: #721c24;
+    opacity: 0.6;
+}
+
+.alert .close:hover {
+    opacity: 1;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 260px;
+    }
+
+    #sidebar.collapsed {
+        transform: translateX(240px);  /* Ajustado para el lado derecho */
+    }
+
+    .alert {
+        width: 300px;
+    }
+}
+
+/* Estilos para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    #sidebar {
+        width: 240px;
+    }
+
+    #sidebar.collapsed {
+        transform: translateX(220px);  /* Ajustado para el lado derecho */
+    }
+
+    .form-label {
+        font-size: 14px;
+    }
+
+    .btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
+
+/* Mejoras de accesibilidad */
+.btn:focus,
+.form-control:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.alert {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Estilos para mejorar la legibilidad del mapa */
+.leaflet-control-layers {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-control-layers-expanded {
+    padding: 10px !important;
 }
