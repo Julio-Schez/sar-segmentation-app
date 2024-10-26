@@ -16,12 +16,14 @@ SAR-Segment-Flask es una aplicación web desarrollada con Flask que permite la v
 
 ## 💻 Requisitos del Sistema
 ```
-Python 3.8+
-Flask
-GDAL
-Rasterio
-Geopandas
-NumPy
+Flask==2.0.1
+Werkzeug==2.0.1
+folium==0.12.1
+Pillow==8.2.0
+numpy==1.21.0
+tifffile==2021.7.2
+geopandas==0.9.0
+matplotlib==3.4.2
 (otros requisitos específicos por definir)
 ```
 
@@ -29,8 +31,8 @@ NumPy
 
 1. Clonar el repositorio:
 ```bash
-git clone https://github.com/usuario/SAR-Segment-Flask.git
-cd SAR-Segment-Flask
+git clone https://github.com/usuario/sar-segmentation-app.git
+cd sar-segmentation-app
 ```
 
 2. Crear y activar entorno virtual:
@@ -63,9 +65,6 @@ http://localhost:5000
 
 4. Utilizar las herramientas de segmentación para detectar inundaciones
 
-## 🗺️ Ejemplos de Uso
-[Aquí se pueden incluir capturas de pantalla o GIFs mostrando la funcionalidad]
-
 ## 🤝 Contribución
 Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
 
@@ -77,11 +76,6 @@ Las contribuciones son bienvenidas. Por favor, sigue estos pasos:
 
 ## 📝 Licencia
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.md) para más detalles.
-
-## 📞 Contacto
-- Nombre del desarrollador
-- Email: ejemplo@email.com
-- GitHub: [@usuario](https://github.com/usuario)
 
 ## 🙏 Agradecimientos
 - [Copernicus Open Access Hub](https://scihub.copernicus.eu/) por proporcionar acceso a las imágenes Sentinel
