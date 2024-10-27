@@ -18,50 +18,67 @@ body {
 /* Estilos del sidebar */
 #sidebar {
     position: absolute;
-    right: 0;  /* Cambiado de left a right */
+    right: 0;
     top: 0;
     width: 300px;
     height: 100%;
     background-color: rgba(255, 255, 255, 0.95);
     padding: 20px;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);  /* Sombra ajustada al lado izquierdo */
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease-in-out;
     z-index: 1000;
 }
 
 /* Sidebar colapsado */
 #sidebar.collapsed {
-    transform: translateX(280px);  /* Cambiado para deslizar hacia la derecha */
+    transform: translateX(280px);
 }
 
 /* Botón de toggle del sidebar */
 #toggle-sidebar {
     position: absolute;
-    left: -40px;  /* Cambiado de right a left */
+    left: -40px;
     top: 10px;
     width: 40px;
     height: 40px;
-    border-radius: 4px 0 0 4px;  /* Ajustado para el lado izquierdo */
+    border-radius: 4px 0 0 4px;
     padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);  /* Sombra ajustada */
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
     z-index: 1001;
 }
 
-/* Estilos para los formularios */
-.form-label {
-    margin-bottom: 10px;
-    font-weight: 500;
-    color: #333;
+/* Estilos para la lista de capas */
+#layers-list {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.form-control {
-    margin-bottom: 15px;
+.list-group-item {
+    padding: 8px 12px;
+    font-size: 0.9em;
+    background-color: rgba(255, 255, 255, 0.95);
 }
 
-/* Botones personalizados */
+.badge {
+    font-size: 0.8em;
+    padding: 5px 8px;
+}
+
+.badge-info {
+    background-color: #17a2b8;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+/* Estilos para los botones */
 .btn {
     display: flex;
     align-items: center;
@@ -132,6 +149,27 @@ body {
     opacity: 1;
 }
 
+/* Mejoras de accesibilidad */
+.btn:focus,
+.form-control:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+/* Control de capas personalizado */
+.leaflet-control-layers {
+    position: absolute;
+    left: 10px !important;
+    top: 10px !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.leaflet-control-layers-expanded {
+    padding: 10px !important;
+}
+
 /* Estilos responsive */
 @media (max-width: 768px) {
     #sidebar {
@@ -139,7 +177,7 @@ body {
     }
 
     #sidebar.collapsed {
-        transform: translateX(240px);  /* Ajustado para el lado derecho */
+        transform: translateX(240px);
     }
 
     .alert {
@@ -147,14 +185,13 @@ body {
     }
 }
 
-/* Estilos para pantallas muy pequeñas */
 @media (max-width: 480px) {
     #sidebar {
         width: 240px;
     }
 
     #sidebar.collapsed {
-        transform: translateX(220px);  /* Ajustado para el lado derecho */
+        transform: translateX(220px);
     }
 
     .form-label {
@@ -165,32 +202,4 @@ body {
         font-size: 12px;
         padding: 6px 12px;
     }
-}
-
-/* Mejoras de accesibilidad */
-.btn:focus,
-.form-control:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.alert {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-/* Estilos para mejorar la legibilidad del mapa */
-.leaflet-control-layers {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-radius: 4px !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-}
-
-.leaflet-control-layers-expanded {
-    padding: 10px !important;
 }
