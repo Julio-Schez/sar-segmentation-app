@@ -23,8 +23,11 @@
             <form action="/" method="post" enctype="multipart/form-data" id="uploadForm">
                 <div class="form-group">
                     <label for="file" class="form-label">Subir Imagen Satelital (TIFF) o Archivo SHP</label>
-                    <input type="file" id="file" name="file" multiple accept=".tiff,.tif,.shp,.dbf,.shx,.prj" class="form-control mb-2">
-                    <small class="form-text text-muted">Para segmentación de inundaciones, use imágenes Sentinel-1</small>
+                    <input type="file" id="file" name="file" multiple accept=".tiff,.tif,.shp,.dbf,.shx,.prj,.TIFF,.TIF,.SHP,.DBF,.SHX,.PRJ" class="form-control mb-2">
+                    <small class="form-text text-muted">
+                        - Para shapefiles, seleccione todos los archivos asociados (.shp, .dbf, .shx, .prj)<br>
+                        - Para segmentación de inundaciones, use imágenes Sentinel-1
+                    </small>
                 </div>
                 <button type="submit" class="btn btn-success w-100 mb-3">
                     <i class="fas fa-upload"></i> Subir
@@ -64,6 +67,7 @@
             const fileInput = document.getElementById('file');
             const segmentButton = document.getElementById('segment-button');
             const layersList = document.getElementById('loaded-layers');
+            const uploadForm = document.getElementById('uploadForm');
 
             // Toggle sidebar
             toggleButton.addEventListener('click', function() {
@@ -78,13 +82,11 @@
                     file.name.toLowerCase().includes('sentinel-1')
                 );
                 
+                // Actualizar estado del botón de segmentación
                 segmentButton.disabled = !hasSentinel1;
-                
-                if (!hasSentinel1 && files.length > 0) {
-                    segmentButton.title = 'Solo disponible para imágenes Sentinel-1';
-                } else {
-                    segmentButton.title = 'Segmentar inundaciones';
-                }
+                segmentButton.title = hasSentinel1 ? 
+                    'Segmentar inundaciones' : 
+                    'Solo disponible para imágenes Sentinel-1';
 
                 // Actualizar lista de capas
                 layersList.innerHTML = '';
@@ -103,15 +105,51 @@
                 });
             });
 
-            // Manejar clic en botón de segmentación
-            segmentButton.addEventListener('click', function(e) {
+            // Manejar envío del formulario
+            uploadForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const formData = new FormData(document.getElementById('uploadForm'));
-                formData.append('action', 'segment');
+                const formData = new FormData(this);
+                
+                // Verificar si hay archivos seleccionados
+                if (fileInput.files.length === 0) {
+                    alert('Por favor, seleccione al menos un archivo.');
+                    return;
+                }
+
+                // Mostrar indicador de carga
+                const submitButton = uploadForm.querySelector('button[type="submit"]');
+                const originalText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
 
                 fetch('/', {
                     method: 'POST',
                     body: formData
+                })
+                .then(response => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalText;
+                    alert('Error al procesar los archivos');
+                });
+            });
+
+            // Manejar clic en botón de segmentación
+            segmentButton.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Mostrar indicador de carga
+                const originalText = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+                fetch('/segment', {
+                    method: 'POST'
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -124,13 +162,40 @@
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Error al procesar la solicitud');
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalText;
                 });
             });
 
-            // Limpiar mapa
+            // Manejar clic en botón de limpiar
             document.getElementById('clear-map').addEventListener('click', function() {
                 if (confirm('¿Está seguro de que desea limpiar el mapa?')) {
-                    location.reload();
+                    // Mostrar indicador de carga
+                    const originalText = this.innerHTML;
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Limpiando...';
+
+                    fetch('/clear', {
+                        method: 'POST'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        } else {
+                            alert('Error al limpiar el mapa: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud');
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.innerHTML = originalText;
+                    });
                 }
             });
 
