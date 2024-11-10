@@ -27,6 +27,7 @@
                     <input type="file" id="file" name="file" multiple accept=".tiff,.tif,.shp,.dbf,.shx,.prj,.TIFF,.TIF,.SHP,.DBF,.SHX,.PRJ" class="form-control mb-2">
                     <small class="form-text text-muted">
                         - Para shapefiles, seleccione todos los archivos asociados (.shp, .dbf, .shx, .prj)<br>
+                        - Para segmentación de inundaciones, use imágenes Sentinel-1<br>
                         - Formatos soportados: TIFF, Shapefile
                     </small>
                 </div>
@@ -48,6 +49,11 @@
 
             <!-- Contenedor para los botones de acción -->
             <div id="action-buttons">
+                <!-- Botón de segmentación -->
+                <button id="segment-button" class="btn btn-info w-100 mb-3" disabled title="Necesita cargar una imagen Sentinel-1">
+                    <i class="fas fa-wand-magic-sparkles"></i> Segmentar Inundaciones
+                </button>
+                
                 <!-- Botón de limpiar mapa -->
                 <button id="clear-map" class="btn btn-danger w-100 mb-3">
                     <i class="fas fa-trash-alt"></i> Limpiar Mapa
@@ -61,7 +67,11 @@
                     {% for layer in image_layers %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         {{ layer.name }}
+                        {% if 'mask' in layer.name.lower() %}
+                        <span class="badge badge-warning">Máscara</span>
+                        {% else %}
                         <span class="badge badge-primary">Imagen</span>
+                        {% endif %}
                     </li>
                     {% endfor %}
                     {% for layer in shapefile_layers %}
@@ -86,6 +96,7 @@
             const uploadForm = document.getElementById('uploadForm');
             const shapefileGroups = document.getElementById('shapefile-groups');
             const otherFiles = document.getElementById('other-files');
+            const segmentButton = document.getElementById('segment-button');
             
             // Objeto para mantener registro de los archivos del shapefile
             let shapefileComponents = new Map();
@@ -131,9 +142,21 @@
                     .forEach(file => {
                         const div = document.createElement('div');
                         div.className = 'file-item mb-1 p-1 border rounded';
-                        div.innerHTML = `<i class="fas fa-file-image text-muted mr-2"></i>${file.name}`;
+                        const icon = file.name.toLowerCase().includes('sentinel') ? 
+                            'fa-satellite' : 'fa-file-image';
+                        div.innerHTML = `<i class="fas ${icon} text-muted mr-2"></i>${file.name}`;
                         otherFiles.appendChild(div);
                     });
+
+                // Verificar si hay imágenes Sentinel-1
+                const hasSentinel1 = Array.from(fileInput.files).some(file => 
+                    file.name.toLowerCase().includes('sentinel1') || 
+                    file.name.toLowerCase().includes('sentinel-1')
+                );
+                segmentButton.disabled = !hasSentinel1;
+                segmentButton.title = hasSentinel1 ? 
+                    'Segmentar inundaciones en imágenes Sentinel-1' : 
+                    'Necesita cargar una imagen Sentinel-1';
             }
 
             fileInput.addEventListener('change', function() {
@@ -231,6 +254,33 @@
                 } finally {
                     submitButton.disabled = false;
                     submitButton.innerHTML = '<i class="fas fa-upload"></i> Subir Archivos';
+                }
+            });
+
+            // Manejar botón de segmentación
+            segmentButton.addEventListener('click', async function() {
+                const button = this;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+                try {
+                    const response = await fetch('/segment', {
+                        method: 'POST'
+                    });
+                    const data = await handleResponse(response);
+                    
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        throw new Error(data.error || 'Error al procesar las imágenes');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert(error.message);
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = originalText;
                 }
             });
 
