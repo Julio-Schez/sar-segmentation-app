@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa Interactivo con Flask</title>
+    <title>Visualizador de Datos Geoespaciales</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -17,30 +17,37 @@
         </button>
     </div>
     {% endif %}
+
     <div id="map-container">
         <div id="sidebar">
             <button id="toggle-sidebar" class="btn btn-primary"><i class="fas fa-bars"></i></button>
             <form action="/" method="post" enctype="multipart/form-data" id="uploadForm">
                 <div class="form-group">
-                    <label for="file" class="form-label">Subir Imagen Satelital (TIFF) o Archivo SHP</label>
+                    <label for="file" class="form-label">Subir Archivos Geoespaciales</label>
                     <input type="file" id="file" name="file" multiple accept=".tiff,.tif,.shp,.dbf,.shx,.prj,.TIFF,.TIF,.SHP,.DBF,.SHX,.PRJ" class="form-control mb-2">
                     <small class="form-text text-muted">
                         - Para shapefiles, seleccione todos los archivos asociados (.shp, .dbf, .shx, .prj)<br>
-                        - Para segmentación de inundaciones, use imágenes Sentinel-1
+                        - Formatos soportados: TIFF, Shapefile
                     </small>
                 </div>
                 <button type="submit" class="btn btn-success w-100 mb-3">
-                    <i class="fas fa-upload"></i> Subir
+                    <i class="fas fa-upload"></i> Subir Archivos
                 </button>
             </form>
 
+            <!-- Contenedor para los archivos seleccionados -->
+            <div id="selected-files" class="mt-3 mb-3">
+                <h6>Archivos Seleccionados:</h6>
+                <div id="shapefile-groups">
+                    <!-- Los grupos de shapefiles se mostrarán aquí -->
+                </div>
+                <div id="other-files">
+                    <!-- Otros archivos seleccionados se mostrarán aquí -->
+                </div>
+            </div>
+
             <!-- Contenedor para los botones de acción -->
             <div id="action-buttons">
-                <!-- Botón de segmentación (inicialmente deshabilitado) -->
-                <button id="segment-button" class="btn btn-info w-100 mb-3" disabled>
-                    <i class="fas fa-wand-magic-sparkles"></i> Segmentar Inundaciones
-                </button>
-                
                 <!-- Botón de limpiar mapa -->
                 <button id="clear-map" class="btn btn-danger w-100 mb-3">
                     <i class="fas fa-trash-alt"></i> Limpiar Mapa
@@ -51,7 +58,18 @@
             <div id="layers-list" class="mt-3">
                 <h6 class="mb-2">Capas Cargadas:</h6>
                 <ul class="list-group" id="loaded-layers">
-                    <!-- Las capas se añadirán aquí dinámicamente -->
+                    {% for layer in image_layers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ layer.name }}
+                        <span class="badge badge-primary">Imagen</span>
+                    </li>
+                    {% endfor %}
+                    {% for layer in shapefile_layers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ layer.name }}
+                        <span class="badge badge-secondary">Vector</span>
+                    </li>
+                    {% endfor %}
                 </ul>
             </div>
         </div>
@@ -65,137 +83,179 @@
             const toggleButton = document.getElementById('toggle-sidebar');
             const sidebar = document.getElementById('sidebar');
             const fileInput = document.getElementById('file');
-            const segmentButton = document.getElementById('segment-button');
-            const layersList = document.getElementById('loaded-layers');
             const uploadForm = document.getElementById('uploadForm');
-
+            const shapefileGroups = document.getElementById('shapefile-groups');
+            const otherFiles = document.getElementById('other-files');
+            
+            // Objeto para mantener registro de los archivos del shapefile
+            let shapefileComponents = new Map();
+            
             // Toggle sidebar
             toggleButton.addEventListener('click', function() {
                 sidebar.classList.toggle('collapsed');
             });
 
-            // Manejar cambios en la selección de archivos
+            // Función para actualizar la visualización de archivos seleccionados
+            function updateFileDisplay() {
+                shapefileGroups.innerHTML = '';
+                otherFiles.innerHTML = '';
+                
+                // Mostrar grupos de shapefiles
+                shapefileComponents.forEach((files, baseName) => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'shapefile-group mb-2 p-2 border rounded';
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'font-weight-bold mb-1';
+                    titleDiv.textContent = `Shapefile: ${baseName}`;
+                    
+                    const filesList = document.createElement('ul');
+                    filesList.className = 'list-unstyled mb-0 pl-3';
+                    
+                    files.forEach(file => {
+                        const li = document.createElement('li');
+                        li.className = 'small';
+                        const extension = file.name.split('.').pop().toLowerCase();
+                        li.innerHTML = `<i class="fas fa-file-alt text-muted mr-1"></i> ${extension}`;
+                        filesList.appendChild(li);
+                    });
+                    
+                    groupDiv.appendChild(titleDiv);
+                    groupDiv.appendChild(filesList);
+                    shapefileGroups.appendChild(groupDiv);
+                });
+                
+                // Mostrar otros archivos
+                Array.from(fileInput.files)
+                    .filter(file => !file.name.match(/\.(shp|dbf|shx|prj)$/i))
+                    .forEach(file => {
+                        const div = document.createElement('div');
+                        div.className = 'file-item mb-1 p-1 border rounded';
+                        div.innerHTML = `<i class="fas fa-file-image text-muted mr-2"></i>${file.name}`;
+                        otherFiles.appendChild(div);
+                    });
+            }
+
             fileInput.addEventListener('change', function() {
                 const files = Array.from(this.files);
-                const hasSentinel1 = files.some(file => 
-                    file.name.toLowerCase().includes('sentinel1') || 
-                    file.name.toLowerCase().includes('sentinel-1')
-                );
+                shapefileComponents.clear();
                 
-                // Actualizar estado del botón de segmentación
-                segmentButton.disabled = !hasSentinel1;
-                segmentButton.title = hasSentinel1 ? 
-                    'Segmentar inundaciones' : 
-                    'Solo disponible para imágenes Sentinel-1';
-
-                // Actualizar lista de capas
-                layersList.innerHTML = '';
+                // Agrupar componentes del shapefile
                 files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    const isSentinel = file.name.toLowerCase().includes('sentinel1') || 
-                                     file.name.toLowerCase().includes('sentinel-1');
-                    li.innerHTML = `
-                        ${file.name}
-                        ${isSentinel ? 
-                            '<span class="badge badge-info">Sentinel-1</span>' : 
-                            '<span class="badge badge-secondary">Otro</span>'}
-                    `;
-                    layersList.appendChild(li);
+                    if (file.name.toLowerCase().match(/\.(shp|dbf|shx|prj)$/)) {
+                        const baseName = file.name.slice(0, -4);
+                        if (!shapefileComponents.has(baseName)) {
+                            shapefileComponents.set(baseName, new Set());
+                        }
+                        shapefileComponents.get(baseName).add(file);
+                    }
                 });
+                
+                updateFileDisplay();
             });
 
-            // Manejar envío del formulario
-            uploadForm.addEventListener('submit', function(e) {
+            // Función para manejar respuestas
+            async function handleResponse(response) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Error en el servidor');
+                    }
+                    return data;
+                } else if (!response.ok) {
+                    throw new Error('Error en el servidor');
+                }
+                return response;
+            }
+            
+            uploadForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                const formData = new FormData(this);
+                const files = Array.from(fileInput.files);
                 
-                // Verificar si hay archivos seleccionados
-                if (fileInput.files.length === 0) {
+                if (files.length === 0) {
                     alert('Por favor, seleccione al menos un archivo.');
                     return;
                 }
-
-                // Mostrar indicador de carga
-                const submitButton = uploadForm.querySelector('button[type="submit"]');
-                const originalText = submitButton.innerHTML;
+                
+                const submitButton = this.querySelector('button[type="submit"]');
                 submitButton.disabled = true;
                 submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-
-                fetch('/', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalText;
-                    location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalText;
-                    alert('Error al procesar los archivos');
-                });
-            });
-
-            // Manejar clic en botón de segmentación
-            segmentButton.addEventListener('click', function(e) {
-                e.preventDefault();
-
-                // Mostrar indicador de carga
-                const originalText = this.innerHTML;
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-
-                fetch('/segment', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert(data.error || 'Error al procesar la imagen');
+                
+                try {
+                    // Separar shapefiles y otros archivos
+                    const shapefileFiles = files.filter(file => 
+                        file.name.toLowerCase().match(/\.(shp|dbf|shx|prj)$/));
+                    const otherFiles = files.filter(file => 
+                        !file.name.toLowerCase().match(/\.(shp|dbf|shx|prj)$/));
+                    
+                    const promises = [];
+                    
+                    // Procesar shapefiles
+                    if (shapefileFiles.length > 0) {
+                        const shapefileFormData = new FormData();
+                        shapefileFiles.forEach(file => {
+                            shapefileFormData.append('file', file);
+                        });
+                        
+                        promises.push(
+                            fetch('/upload_shapefile', {
+                                method: 'POST',
+                                body: shapefileFormData
+                            }).then(handleResponse)
+                        );
                     }
-                })
-                .catch(error => {
+                    
+                    // Procesar otros archivos
+                    if (otherFiles.length > 0) {
+                        const regularFormData = new FormData();
+                        otherFiles.forEach(file => {
+                            regularFormData.append('file', file);
+                        });
+                        
+                        promises.push(
+                            fetch('/', {
+                                method: 'POST',
+                                body: regularFormData
+                            }).then(handleResponse)
+                        );
+                    }
+                    
+                    // Esperar a que todas las cargas se completen
+                    await Promise.all(promises);
+                    location.reload();
+                    
+                } catch (error) {
                     console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
-                })
-                .finally(() => {
-                    this.disabled = false;
-                    this.innerHTML = originalText;
-                });
+                    alert(error.message);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-upload"></i> Subir Archivos';
+                }
             });
 
             // Manejar clic en botón de limpiar
-            document.getElementById('clear-map').addEventListener('click', function() {
+            document.getElementById('clear-map').addEventListener('click', async function() {
                 if (confirm('¿Está seguro de que desea limpiar el mapa?')) {
-                    // Mostrar indicador de carga
-                    const originalText = this.innerHTML;
-                    this.disabled = true;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Limpiando...';
+                    const button = this;
+                    const originalText = button.innerHTML;
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Limpiando...';
 
-                    fetch('/clear', {
-                        method: 'POST'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
+                    try {
+                        const response = await fetch('/clear', {
+                            method: 'POST'
+                        });
+                        const data = await handleResponse(response);
                         if (data.success) {
                             location.reload();
-                        } else {
-                            alert('Error al limpiar el mapa: ' + data.error);
                         }
-                    })
-                    .catch(error => {
+                    } catch (error) {
                         console.error('Error:', error);
-                        alert('Error al procesar la solicitud');
-                    })
-                    .finally(() => {
-                        this.disabled = false;
-                        this.innerHTML = originalText;
-                    });
+                        alert(error.message);
+                        button.disabled = false;
+                        button.innerHTML = originalText;
+                    }
                 }
             });
 
